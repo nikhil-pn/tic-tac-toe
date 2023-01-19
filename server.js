@@ -25,6 +25,34 @@ app.get("/:room", (req, res) => {
   });
 });
 
+io.on("connection", (socket) => {
+  socket.on("join-room", (roomId) => {
+    room = io.sockets.adapter.rooms.get(roomId);
+    let roomSize = 0;
+    if (room) {
+      roomSize = room.size;
+    }
+
+    if (roomSize < 2) {
+      socket.join(roomId);
+      socket.broadcast.to(roomId).emit("user-connected");
+      socket.on("disconnect", () => {
+        socket.broadcast.to(roomId).emit("user-disconnected");
+      });
+
+      socket.on("can-play", () => {
+        socket.broadcast.to(roomId).emit("can-play");
+      });
+
+      socket.on("clicked", (id) => {
+        socket.broadcast.to(roomId).emit("clicked", id);
+      });
+    }else{
+      socket.emit("full-room")
+    }
+  });
+});
+
 server.listen(PORT, () => {
   console.log("server is running at port 3001");
 });
